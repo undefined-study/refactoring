@@ -170,3 +170,152 @@ isWithInRange(range){
     }
   }
 ```
+
+## 질의 함수를 매개변수로 바꾸기
+
+대상 함수가 더 이상 특정 원소에 의존하길 원치 않을 때 일어난다.
+
+똑같은 값을 넣으면 매번 똑같은 결과를 내는 함수는 다루기 쉽다.
+
+```jsx
+// before
+targetTemperature(aPlan);
+
+function targetTemperature(aPlan) {
+  currentTemperature = thermostat.currentTemperature;
+}
+```
+
+```jsx
+// after
+targetTemperature(aPlan, thermostat.currentTemperature);
+
+function targetTemperature(aPlan, currentTemperature) {
+  currentTemperature = currentTemperature;
+}
+```
+
+## 세터 제거하기
+
+세터 메서드가 있다고 함은 필드가 수정될 수 있다는 뜻 → 수정되지 않길 원하는 필드라면 세터를 제공하지 않았을 것
+
+세터 제거하기가 필요한 상황
+
+1. 무조건 접근자 메서드를 통해서만 필드를 다루려 할 때
+2. 클라이언트에서 생성 스크립트를 사용해 객체를 생성할 때
+
+## 생성자를 팩토리 함수로 바꾸기
+
+클래스의 인스턴스를 만들 때 생성자를 호출하는 방법이 조금 복잡하다면 이 리팩토링을 사용할 수 있다.
+
+아래의 코드에서는 typeCode에 어떠한 값이 들어가야되는지 알기 어렵다.
+
+```jsx
+//before
+constructor(name, typeCode) {
+  this._name = name;
+  this._typeCode = typeCode;
+}
+
+get name() {
+  return this._name;
+}
+
+get type() {
+  return Employee.legalTypeCodes[this._typeCode];
+}
+
+static get legalTypeCodes() {
+  return { E: 'Engineer', M: 'Manager', S: 'Salesman' };
+}
+```
+
+```jsx
+//after
+constructor(name, typeCode) {
+  this._name = name;
+  this._typeCode = typeCode;
+}
+
+get name() {
+  return this._name;
+}
+
+get type() {
+  return Employee.legalTypeCodes[this._typeCode];
+}
+
+static get legalTypeCodes() {
+  return { E: 'Engineer', M: 'Manager', S: 'Salesman' };
+}
+
+static createEngineer(name) {
+	return new Employee(name, 'E');
+}
+```
+
+## 명령을 함수로 바꾸기
+
+명령, 명령 객체(command객체)는 대부분 메서드 하나로 구성되며, 이 메서드를 요청해 실행하는 것이 이 객체의 목적이다.
+
+아래의 클래스처럼 로직이 크게 복잡하지 않다면 장점보단 단점이 크니 평범한 함수로 바꾸는게 낫다.
+
+```jsx
+// before
+class ChargeCalculator {
+  constructor(customer, usage, provider) {
+    this._customer = customer;
+    this._usage = usage;
+    this._provider = provider;
+  }
+  get baseCharge() {
+    return this._customer.baseRate * this._usage;
+  }
+  get charge() {
+    return this.baseCharge + this._provider.connectionCharge;
+  }
+}
+```
+
+```jsx
+// after
+function charge(customer, usage, provide) {
+  const baseCharge = customer.baseRate * usage;
+  return baseCharge + provider.connectionCharge;
+}
+```
+
+## 수정된 값 반환하기
+
+데이터가 수정된다면 그 사실을 명확히 알려주어서, 어느 함수가 무슨 일을 하는지 쉽게 알 수 있게 하는 일이 중요하다.
+
+데이터가 수정됨을 알려주기 좋은 방법으로 변수를 갱신하는 함수라면 수정된 값을 반환하여 호출자가 그 값을 변수에 담아두도록 하는 것이다.
+
+이 리팩토링은 값 하나를 계산한다는 분명한 목적이 있는 함수들에게 유요하며, 반대로 값 여러 개를 갱신하는 함수에는 효과적이지 않다.
+
+```jsx
+// before
+let totalAscent = 0;
+calculateAscent();
+
+function calculateAscent() {
+  for (let i = 1; i < points.length; i++) {
+    const verticalChange = points[i].elevation - points[i - 1].elevation;
+    totalAscent += verticalChange > 0 ? verticalChange : 0;
+  }
+}
+```
+
+```jsx
+// after
+const totalAscent = calculateAscent();
+
+function calculateAscent() {
+  let result = 0;
+  for (let i = 1; i < points.length; i++) {
+    const verticalChange = points[i].elevation - points[i - 1].elevation;
+    result += verticalChange > 0 ? verticalChange : 0;
+  }
+  return result;
+}
+```
